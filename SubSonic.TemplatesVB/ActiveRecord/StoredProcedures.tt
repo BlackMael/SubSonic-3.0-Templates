@@ -18,9 +18,8 @@ NameSpace <#=Namespace#>
 <#  foreach(var sp in sps){#>
         Public Function <#=EscapeIdentifier(sp.CleanName)#>(<#=sp.ArgList#>) As StoredProcedure
             Dim sp As New StoredProcedure("<#=sp.Name#>",Me.Provider)
-<#      foreach(var par in sp.Parameters){
-			string cleanName = EscapeIdentifier(par.CleanName);#>
-            sp.Command.AddParameter("<#=par.Name#>",<#=cleanName#>,DbType.<#=par.DbType#>)
+<#      foreach(var par in sp.Parameters){#>
+            sp.Command.AddParameter("<#=par.Name#>",<#=EscapeIdentifier(par.CleanName)#>,DbType.<#=par.DbType#>)
 <#      }#>
             Return sp
         End Function
