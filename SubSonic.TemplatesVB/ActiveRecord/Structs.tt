@@ -27,7 +27,7 @@ NameSpace <#=Namespace#>
 		Public Sub New(provider As IDataProvider)
 			MyBase.New("<#=tbl.Name#>",provider)
 			ClassName = "<#=tbl.ClassName#>"
-			SchemaName = "<#=tbl.Schema#>"
+			SchemaName = "<#=tbl.Schema ?? ""#>"
                 
 <#          foreach(var col in tbl.Columns){#>
 				Columns.Add(New DatabaseColumn("<#=col.Name#>", Me) With { _

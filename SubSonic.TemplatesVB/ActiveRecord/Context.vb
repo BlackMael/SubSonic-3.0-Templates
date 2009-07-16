@@ -13,7 +13,7 @@ Imports SubSonic.Schema
 Imports System.Data.Common
 Imports System.Collections.Generic
 
-NameSpace Southwind
+NameSpace WestWind
 
     Public Partial Class NorthwindDB 
 		Implements IQuerySurface

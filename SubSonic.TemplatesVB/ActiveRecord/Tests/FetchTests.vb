@@ -12,7 +12,7 @@
 ''   rights and limitations under the License.
 '' 
 Imports System.Linq
-Imports Southwind
+Imports WestWind
 Imports Xunit
 
 Namespace SubSonic.Tests.ActiveRecord

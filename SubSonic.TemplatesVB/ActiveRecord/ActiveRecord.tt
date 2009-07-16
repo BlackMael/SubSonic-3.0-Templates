@@ -37,9 +37,6 @@ NameSpace <#=Namespace #>
 		' Built-in testing
         Shared TestItems As IList(Of <#=tbl.ClassName#>)
         Shared _testRepo As TestRepository(Of <#=tbl.ClassName#>)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
 			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of <#=tbl.ClassName#>)(New <#=Namespace#>.<#=DatabaseName#>DB())
         End Sub
@@ -73,7 +70,11 @@ NameSpace <#=Namespace #>
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -106,6 +107,7 @@ NameSpace <#=Namespace #>
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
@@ -136,8 +138,7 @@ NameSpace <#=Namespace #>
 
         Public Sub New(expression As Expression(Of Func(Of <#=tbl.ClassName#>, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
@@ -172,7 +173,8 @@ NameSpace <#=Namespace #>
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -186,8 +188,6 @@ NameSpace <#=Namespace #>
             Dim singleItem As <#=tbl.ClassName#> = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -297,7 +297,7 @@ NameSpace <#=Namespace #>
             Get
                   Dim repo = <#=Namespace #>.<#=fk.OtherClass#>.GetRepo()
                   Return From items In repo.GetAll() _
-                       	Where items.<#=fk.OtherColumn#> = _<#=fk.ThisColumn#> _
+                       	Where items.<#=CleanUp(fk.OtherColumn)#> = _<#=CleanUp(fk.ThisColumn)#> _
                        Select items
             End Get
         End Property
@@ -324,14 +324,16 @@ NameSpace <#=Namespace #>
 				Return _<#=col.CleanName #>
 			End Get
             Set(value As <#=col.SysType #><#=CheckNullable(col)#>)
-                _<#=col.CleanName #> = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "<#=col.Name #>")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _<#=col.CleanName #> <#=col.SysType=="Byte()" ? "Is" : "<>"#> value Then
+					_<#=col.CleanName #> = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "<#=col.Name #>")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -376,7 +378,7 @@ NameSpace <#=Namespace #>
         Public Sub Update(provider As IDataProvider) Implements IActiveRecord.Update
         
 <#if(tbl.Columns.Any(x=>x.Name=="ModifiedBy")){#>
-            Me.ModifiedBy = Environment.UserName
+            If String.IsNullOrEmpty(Me.ModifiedBy) Then Me.ModifiedBy = Environment.UserName
 <#}#>
 <#if(tbl.Columns.Any(x=>x.Name=="ModifiedOn")){#>
             Me.ModifiedOn = DateTime.Now
@@ -411,15 +413,17 @@ NameSpace <#=Namespace #>
             Me.CreatedOn = DateTime.Now
 <#}#>
 <#if(tbl.Columns.Any(x=>x.Name=="CreatedBy")){#>
-            Me.CreatedBy = Environment.UserName
+			If String.IsNullOrEmpty(Me.CreatedBy) Then Me.CreatedBy = Environment.UserName
 <#}#>
 <#if(tbl.Columns.Any(x=>x.Name=="ModifiedOn")){#>
             Me.ModifiedOn = DateTime.Now
 <#}#>
 <#if(tbl.Columns.Any(x=>x.Name=="ModifiedBy")){#>
-            Me.ModifiedBy = Environment.UserName
+            If String.IsNullOrEmpty(Me.ModifiedBy) Then Me.ModifiedBy = Environment.UserName
 <#}#>
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -540,14 +544,14 @@ NameSpace <#=Namespace #>
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()

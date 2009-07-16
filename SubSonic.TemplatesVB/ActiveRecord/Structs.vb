@@ -7,7 +7,7 @@ Imports System.Collections.Generic
 Imports SubSonic.DataProviders
 Imports System.Data
 
-NameSpace Southwind
+NameSpace WestWind
 
 		''' <summary>
 		''' Table: Customers

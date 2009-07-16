@@ -16,7 +16,7 @@ Imports SubSonic.Repository
 Imports System.ComponentModel
 Imports System.Data.Common
 
-NameSpace Southwind
+NameSpace WestWind
     
     
     ''' <summary>
@@ -28,11 +28,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of Customer)
         Shared _testRepo As TestRepository(Of Customer)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Customer)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Customer)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -64,7 +61,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -81,9 +82,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -97,12 +98,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -127,18 +129,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of Customer, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Customer)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of Customer)
             
@@ -163,7 +164,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -177,8 +179,6 @@ NameSpace Southwind
             Dim singleItem As Customer = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -270,7 +270,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property CustomerCustomerDemos As IQueryable(Of CustomerCustomerDemo)
             Get
-                  Dim repo = Southwind.CustomerCustomerDemo.GetRepo()
+                  Dim repo = WestWind.CustomerCustomerDemo.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.CustomerID = _CustomerID _
                        Select items
@@ -279,7 +279,7 @@ NameSpace Southwind
 
         Public ReadOnly Property Orders As IQueryable(Of Order)
             Get
-                  Dim repo = Southwind.Order.GetRepo()
+                  Dim repo = WestWind.Order.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.CustomerID = _CustomerID _
                        Select items
@@ -294,14 +294,16 @@ NameSpace Southwind
 				Return _CustomerID
 			End Get
             Set(value As String)
-                _CustomerID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CustomerID <> value Then
+					_CustomerID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -311,14 +313,16 @@ NameSpace Southwind
 				Return _CompanyName
 			End Get
             Set(value As String)
-                _CompanyName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CompanyName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CompanyName <> value Then
+					_CompanyName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CompanyName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -328,14 +332,16 @@ NameSpace Southwind
 				Return _ContactName
 			End Get
             Set(value As String)
-                _ContactName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ContactName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ContactName <> value Then
+					_ContactName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ContactName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -345,14 +351,16 @@ NameSpace Southwind
 				Return _ContactTitle
 			End Get
             Set(value As String)
-                _ContactTitle = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ContactTitle")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ContactTitle <> value Then
+					_ContactTitle = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ContactTitle")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -362,14 +370,16 @@ NameSpace Southwind
 				Return _Address
 			End Get
             Set(value As String)
-                _Address = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Address")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Address <> value Then
+					_Address = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Address")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -379,14 +389,16 @@ NameSpace Southwind
 				Return _City
 			End Get
             Set(value As String)
-                _City = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "City")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _City <> value Then
+					_City = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "City")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -396,14 +408,16 @@ NameSpace Southwind
 				Return _Region
 			End Get
             Set(value As String)
-                _Region = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Region")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Region <> value Then
+					_Region = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Region")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -413,14 +427,16 @@ NameSpace Southwind
 				Return _PostalCode
 			End Get
             Set(value As String)
-                _PostalCode = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "PostalCode")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _PostalCode <> value Then
+					_PostalCode = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "PostalCode")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -430,14 +446,16 @@ NameSpace Southwind
 				Return _Country
 			End Get
             Set(value As String)
-                _Country = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Country")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Country <> value Then
+					_Country = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Country")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -447,14 +465,16 @@ NameSpace Southwind
 				Return _Phone
 			End Get
             Set(value As String)
-                _Phone = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Phone")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Phone <> value Then
+					_Phone = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Phone")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -464,14 +484,16 @@ NameSpace Southwind
 				Return _Fax
 			End Get
             Set(value As String)
-                _Fax = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Fax")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Fax <> value Then
+					_Fax = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Fax")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -520,7 +542,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -570,14 +594,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -595,11 +619,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of Shipper)
         Shared _testRepo As TestRepository(Of Shipper)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Shipper)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Shipper)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -631,7 +652,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -648,9 +673,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -664,12 +689,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -694,18 +720,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of Shipper, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Shipper)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of Shipper)
             
@@ -730,7 +755,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -744,8 +770,6 @@ NameSpace Southwind
             Dim singleItem As Shipper = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -837,7 +861,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Orders As IQueryable(Of Order)
             Get
-                  Dim repo = Southwind.Order.GetRepo()
+                  Dim repo = WestWind.Order.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.ShipVia = _ShipperID _
                        Select items
@@ -852,14 +876,16 @@ NameSpace Southwind
 				Return _ShipperID
 			End Get
             Set(value As Integer)
-                _ShipperID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipperID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ShipperID <> value Then
+					_ShipperID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipperID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -869,14 +895,16 @@ NameSpace Southwind
 				Return _CompanyName
 			End Get
             Set(value As String)
-                _CompanyName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CompanyName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CompanyName <> value Then
+					_CompanyName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CompanyName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -886,14 +914,16 @@ NameSpace Southwind
 				Return _Phone
 			End Get
             Set(value As String)
-                _Phone = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Phone")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Phone <> value Then
+					_Phone = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Phone")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -942,7 +972,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -992,14 +1024,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -1017,11 +1049,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of Supplier)
         Shared _testRepo As TestRepository(Of Supplier)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Supplier)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Supplier)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -1053,7 +1082,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -1070,9 +1103,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -1086,12 +1119,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -1116,18 +1150,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of Supplier, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Supplier)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of Supplier)
             
@@ -1152,7 +1185,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -1166,8 +1200,6 @@ NameSpace Southwind
             Dim singleItem As Supplier = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -1259,7 +1291,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Products As IQueryable(Of Product)
             Get
-                  Dim repo = Southwind.Product.GetRepo()
+                  Dim repo = WestWind.Product.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.SupplierID = _SupplierID _
                        Select items
@@ -1274,14 +1306,16 @@ NameSpace Southwind
 				Return _SupplierID
 			End Get
             Set(value As Integer)
-                _SupplierID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "SupplierID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _SupplierID <> value Then
+					_SupplierID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "SupplierID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1291,14 +1325,16 @@ NameSpace Southwind
 				Return _CompanyName
 			End Get
             Set(value As String)
-                _CompanyName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CompanyName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CompanyName <> value Then
+					_CompanyName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CompanyName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1308,14 +1344,16 @@ NameSpace Southwind
 				Return _ContactName
 			End Get
             Set(value As String)
-                _ContactName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ContactName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ContactName <> value Then
+					_ContactName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ContactName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1325,14 +1363,16 @@ NameSpace Southwind
 				Return _ContactTitle
 			End Get
             Set(value As String)
-                _ContactTitle = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ContactTitle")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ContactTitle <> value Then
+					_ContactTitle = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ContactTitle")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1342,14 +1382,16 @@ NameSpace Southwind
 				Return _Address
 			End Get
             Set(value As String)
-                _Address = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Address")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Address <> value Then
+					_Address = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Address")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1359,14 +1401,16 @@ NameSpace Southwind
 				Return _City
 			End Get
             Set(value As String)
-                _City = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "City")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _City <> value Then
+					_City = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "City")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1376,14 +1420,16 @@ NameSpace Southwind
 				Return _Region
 			End Get
             Set(value As String)
-                _Region = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Region")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Region <> value Then
+					_Region = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Region")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1393,14 +1439,16 @@ NameSpace Southwind
 				Return _PostalCode
 			End Get
             Set(value As String)
-                _PostalCode = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "PostalCode")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _PostalCode <> value Then
+					_PostalCode = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "PostalCode")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1410,14 +1458,16 @@ NameSpace Southwind
 				Return _Country
 			End Get
             Set(value As String)
-                _Country = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Country")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Country <> value Then
+					_Country = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Country")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1427,14 +1477,16 @@ NameSpace Southwind
 				Return _Phone
 			End Get
             Set(value As String)
-                _Phone = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Phone")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Phone <> value Then
+					_Phone = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Phone")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1444,14 +1496,16 @@ NameSpace Southwind
 				Return _Fax
 			End Get
             Set(value As String)
-                _Fax = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Fax")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Fax <> value Then
+					_Fax = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Fax")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1461,14 +1515,16 @@ NameSpace Southwind
 				Return _HomePage
 			End Get
             Set(value As String)
-                _HomePage = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "HomePage")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _HomePage <> value Then
+					_HomePage = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "HomePage")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1517,7 +1573,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -1567,14 +1625,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -1592,11 +1650,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of Order)
         Shared _testRepo As TestRepository(Of Order)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Order)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Order)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -1628,7 +1683,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -1645,9 +1704,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -1661,12 +1720,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -1691,18 +1751,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of Order, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Order)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of Order)
             
@@ -1727,7 +1786,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -1741,8 +1801,6 @@ NameSpace Southwind
             Dim singleItem As Order = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -1834,7 +1892,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Customers As IQueryable(Of Customer)
             Get
-                  Dim repo = Southwind.Customer.GetRepo()
+                  Dim repo = WestWind.Customer.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.CustomerID = _CustomerID _
                        Select items
@@ -1843,7 +1901,7 @@ NameSpace Southwind
 
         Public ReadOnly Property Employees As IQueryable(Of Employee)
             Get
-                  Dim repo = Southwind.Employee.GetRepo()
+                  Dim repo = WestWind.Employee.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.EmployeeID = _EmployeeID _
                        Select items
@@ -1852,7 +1910,7 @@ NameSpace Southwind
 
         Public ReadOnly Property OrderDetails As IQueryable(Of OrderDetail)
             Get
-                  Dim repo = Southwind.OrderDetail.GetRepo()
+                  Dim repo = WestWind.OrderDetail.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.OrderID = _OrderID _
                        Select items
@@ -1861,7 +1919,7 @@ NameSpace Southwind
 
         Public ReadOnly Property Shippers As IQueryable(Of Shipper)
             Get
-                  Dim repo = Southwind.Shipper.GetRepo()
+                  Dim repo = WestWind.Shipper.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.ShipperID = _ShipVia _
                        Select items
@@ -1876,14 +1934,16 @@ NameSpace Southwind
 				Return _OrderID
 			End Get
             Set(value As Integer)
-                _OrderID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "OrderID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _OrderID <> value Then
+					_OrderID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "OrderID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1893,14 +1953,16 @@ NameSpace Southwind
 				Return _CustomerID
 			End Get
             Set(value As String)
-                _CustomerID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CustomerID <> value Then
+					_CustomerID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1910,14 +1972,16 @@ NameSpace Southwind
 				Return _EmployeeID
 			End Get
             Set(value As Integer?)
-                _EmployeeID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "EmployeeID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _EmployeeID <> value Then
+					_EmployeeID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "EmployeeID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1927,14 +1991,16 @@ NameSpace Southwind
 				Return _OrderDate
 			End Get
             Set(value As Date)
-                _OrderDate = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "OrderDate")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _OrderDate <> value Then
+					_OrderDate = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "OrderDate")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1944,14 +2010,16 @@ NameSpace Southwind
 				Return _RequiredDate
 			End Get
             Set(value As Date?)
-                _RequiredDate = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "RequiredDate")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _RequiredDate <> value Then
+					_RequiredDate = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "RequiredDate")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1961,14 +2029,16 @@ NameSpace Southwind
 				Return _ShippedDate
 			End Get
             Set(value As Date?)
-                _ShippedDate = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShippedDate")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ShippedDate <> value Then
+					_ShippedDate = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShippedDate")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1978,14 +2048,16 @@ NameSpace Southwind
 				Return _ShipVia
 			End Get
             Set(value As Integer?)
-                _ShipVia = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipVia")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ShipVia <> value Then
+					_ShipVia = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipVia")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -1995,14 +2067,16 @@ NameSpace Southwind
 				Return _Freight
 			End Get
             Set(value As Decimal?)
-                _Freight = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Freight")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Freight <> value Then
+					_Freight = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Freight")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2012,14 +2086,16 @@ NameSpace Southwind
 				Return _ShipName
 			End Get
             Set(value As String)
-                _ShipName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ShipName <> value Then
+					_ShipName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2029,14 +2105,16 @@ NameSpace Southwind
 				Return _ShipAddress
 			End Get
             Set(value As String)
-                _ShipAddress = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipAddress")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ShipAddress <> value Then
+					_ShipAddress = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipAddress")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2046,14 +2124,16 @@ NameSpace Southwind
 				Return _ShipCity
 			End Get
             Set(value As String)
-                _ShipCity = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipCity")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ShipCity <> value Then
+					_ShipCity = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipCity")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2063,14 +2143,16 @@ NameSpace Southwind
 				Return _ShipRegion
 			End Get
             Set(value As String)
-                _ShipRegion = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipRegion")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ShipRegion <> value Then
+					_ShipRegion = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipRegion")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2080,14 +2162,16 @@ NameSpace Southwind
 				Return _ShipPostalCode
 			End Get
             Set(value As String)
-                _ShipPostalCode = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipPostalCode")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ShipPostalCode <> value Then
+					_ShipPostalCode = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipPostalCode")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2097,14 +2181,16 @@ NameSpace Southwind
 				Return _ShipCountry
 			End Get
             Set(value As String)
-                _ShipCountry = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipCountry")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ShipCountry <> value Then
+					_ShipCountry = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ShipCountry")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2153,7 +2239,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -2203,14 +2291,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -2228,11 +2316,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of Product)
         Shared _testRepo As TestRepository(Of Product)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Product)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Product)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -2264,7 +2349,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -2281,9 +2370,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -2297,12 +2386,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -2327,18 +2417,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of Product, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Product)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of Product)
             
@@ -2363,7 +2452,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -2377,8 +2467,6 @@ NameSpace Southwind
             Dim singleItem As Product = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -2470,7 +2558,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Categories As IQueryable(Of Category)
             Get
-                  Dim repo = Southwind.Category.GetRepo()
+                  Dim repo = WestWind.Category.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.CategoryID = _CategoryID _
                        Select items
@@ -2479,7 +2567,7 @@ NameSpace Southwind
 
         Public ReadOnly Property OrderDetails As IQueryable(Of OrderDetail)
             Get
-                  Dim repo = Southwind.OrderDetail.GetRepo()
+                  Dim repo = WestWind.OrderDetail.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.ProductID = _ProductID _
                        Select items
@@ -2488,7 +2576,7 @@ NameSpace Southwind
 
         Public ReadOnly Property Suppliers As IQueryable(Of Supplier)
             Get
-                  Dim repo = Southwind.Supplier.GetRepo()
+                  Dim repo = WestWind.Supplier.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.SupplierID = _SupplierID _
                        Select items
@@ -2503,14 +2591,16 @@ NameSpace Southwind
 				Return _ProductID
 			End Get
             Set(value As Integer)
-                _ProductID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ProductID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ProductID <> value Then
+					_ProductID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ProductID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2520,14 +2610,16 @@ NameSpace Southwind
 				Return _ProductName
 			End Get
             Set(value As String)
-                _ProductName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ProductName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ProductName <> value Then
+					_ProductName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ProductName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2537,14 +2629,16 @@ NameSpace Southwind
 				Return _SupplierID
 			End Get
             Set(value As Integer?)
-                _SupplierID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "SupplierID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _SupplierID <> value Then
+					_SupplierID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "SupplierID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2554,14 +2648,16 @@ NameSpace Southwind
 				Return _CategoryID
 			End Get
             Set(value As Integer?)
-                _CategoryID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CategoryID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CategoryID <> value Then
+					_CategoryID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CategoryID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2571,14 +2667,16 @@ NameSpace Southwind
 				Return _QuantityPerUnit
 			End Get
             Set(value As String)
-                _QuantityPerUnit = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "QuantityPerUnit")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _QuantityPerUnit <> value Then
+					_QuantityPerUnit = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "QuantityPerUnit")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2588,14 +2686,16 @@ NameSpace Southwind
 				Return _UnitPrice
 			End Get
             Set(value As Decimal?)
-                _UnitPrice = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "UnitPrice")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _UnitPrice <> value Then
+					_UnitPrice = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "UnitPrice")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2605,14 +2705,16 @@ NameSpace Southwind
 				Return _UnitsInStock
 			End Get
             Set(value As Short?)
-                _UnitsInStock = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "UnitsInStock")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _UnitsInStock <> value Then
+					_UnitsInStock = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "UnitsInStock")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2622,14 +2724,16 @@ NameSpace Southwind
 				Return _UnitsOnOrder
 			End Get
             Set(value As Short?)
-                _UnitsOnOrder = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "UnitsOnOrder")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _UnitsOnOrder <> value Then
+					_UnitsOnOrder = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "UnitsOnOrder")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2639,14 +2743,16 @@ NameSpace Southwind
 				Return _ReorderLevel
 			End Get
             Set(value As Short?)
-                _ReorderLevel = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ReorderLevel")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ReorderLevel <> value Then
+					_ReorderLevel = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ReorderLevel")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2656,14 +2762,16 @@ NameSpace Southwind
 				Return _Discontinued
 			End Get
             Set(value As Boolean)
-                _Discontinued = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Discontinued")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Discontinued <> value Then
+					_Discontinued = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Discontinued")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -2712,7 +2820,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -2762,14 +2872,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -2787,11 +2897,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of OrderDetail)
         Shared _testRepo As TestRepository(Of OrderDetail)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of OrderDetail)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of OrderDetail)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -2823,7 +2930,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -2840,9 +2951,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -2856,12 +2967,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -2886,18 +2998,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of OrderDetail, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of OrderDetail)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of OrderDetail)
             
@@ -2922,7 +3033,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -2936,8 +3048,6 @@ NameSpace Southwind
             Dim singleItem As OrderDetail = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -3029,7 +3139,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Orders As IQueryable(Of Order)
             Get
-                  Dim repo = Southwind.Order.GetRepo()
+                  Dim repo = WestWind.Order.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.OrderID = _OrderID _
                        Select items
@@ -3038,7 +3148,7 @@ NameSpace Southwind
 
         Public ReadOnly Property Products As IQueryable(Of Product)
             Get
-                  Dim repo = Southwind.Product.GetRepo()
+                  Dim repo = WestWind.Product.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.ProductID = _ProductID _
                        Select items
@@ -3053,14 +3163,16 @@ NameSpace Southwind
 				Return _OrderID
 			End Get
             Set(value As Integer)
-                _OrderID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "OrderID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _OrderID <> value Then
+					_OrderID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "OrderID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -3070,14 +3182,16 @@ NameSpace Southwind
 				Return _ProductID
 			End Get
             Set(value As Integer)
-                _ProductID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ProductID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ProductID <> value Then
+					_ProductID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ProductID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -3087,14 +3201,16 @@ NameSpace Southwind
 				Return _UnitPrice
 			End Get
             Set(value As Decimal)
-                _UnitPrice = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "UnitPrice")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _UnitPrice <> value Then
+					_UnitPrice = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "UnitPrice")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -3104,14 +3220,16 @@ NameSpace Southwind
 				Return _Quantity
 			End Get
             Set(value As Short)
-                _Quantity = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Quantity")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Quantity <> value Then
+					_Quantity = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Quantity")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -3121,14 +3239,16 @@ NameSpace Southwind
 				Return _Discount
 			End Get
             Set(value As Decimal)
-                _Discount = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Discount")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Discount <> value Then
+					_Discount = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Discount")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -3177,7 +3297,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -3227,14 +3349,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -3252,11 +3374,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of CustomerCustomerDemo)
         Shared _testRepo As TestRepository(Of CustomerCustomerDemo)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of CustomerCustomerDemo)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of CustomerCustomerDemo)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -3288,7 +3407,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -3305,9 +3428,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -3321,12 +3444,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -3351,18 +3475,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of CustomerCustomerDemo, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of CustomerCustomerDemo)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of CustomerCustomerDemo)
             
@@ -3387,7 +3510,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -3401,8 +3525,6 @@ NameSpace Southwind
             Dim singleItem As CustomerCustomerDemo = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -3494,7 +3616,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property CustomerDemographics As IQueryable(Of CustomerDemographic)
             Get
-                  Dim repo = Southwind.CustomerDemographic.GetRepo()
+                  Dim repo = WestWind.CustomerDemographic.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.CustomerTypeID = _CustomerTypeID _
                        Select items
@@ -3503,7 +3625,7 @@ NameSpace Southwind
 
         Public ReadOnly Property Customers As IQueryable(Of Customer)
             Get
-                  Dim repo = Southwind.Customer.GetRepo()
+                  Dim repo = WestWind.Customer.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.CustomerID = _CustomerID _
                        Select items
@@ -3518,14 +3640,16 @@ NameSpace Southwind
 				Return _CustomerID
 			End Get
             Set(value As String)
-                _CustomerID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CustomerID <> value Then
+					_CustomerID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -3535,14 +3659,16 @@ NameSpace Southwind
 				Return _CustomerTypeID
 			End Get
             Set(value As String)
-                _CustomerTypeID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerTypeID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CustomerTypeID <> value Then
+					_CustomerTypeID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerTypeID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -3591,7 +3717,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -3641,14 +3769,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -3666,11 +3794,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of CustomerDemographic)
         Shared _testRepo As TestRepository(Of CustomerDemographic)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of CustomerDemographic)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of CustomerDemographic)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -3702,7 +3827,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -3719,9 +3848,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -3735,12 +3864,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -3765,18 +3895,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of CustomerDemographic, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of CustomerDemographic)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of CustomerDemographic)
             
@@ -3801,7 +3930,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -3815,8 +3945,6 @@ NameSpace Southwind
             Dim singleItem As CustomerDemographic = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -3908,7 +4036,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property CustomerCustomerDemos As IQueryable(Of CustomerCustomerDemo)
             Get
-                  Dim repo = Southwind.CustomerCustomerDemo.GetRepo()
+                  Dim repo = WestWind.CustomerCustomerDemo.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.CustomerTypeID = _CustomerTypeID _
                        Select items
@@ -3923,14 +4051,16 @@ NameSpace Southwind
 				Return _CustomerTypeID
 			End Get
             Set(value As String)
-                _CustomerTypeID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerTypeID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CustomerTypeID <> value Then
+					_CustomerTypeID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerTypeID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -3940,14 +4070,16 @@ NameSpace Southwind
 				Return _CustomerDesc
 			End Get
             Set(value As String)
-                _CustomerDesc = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerDesc")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CustomerDesc <> value Then
+					_CustomerDesc = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CustomerDesc")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -3996,7 +4128,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -4046,14 +4180,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -4071,11 +4205,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of Region)
         Shared _testRepo As TestRepository(Of Region)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Region)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Region)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -4107,7 +4238,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -4124,9 +4259,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -4140,12 +4275,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -4170,18 +4306,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of Region, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Region)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of Region)
             
@@ -4206,7 +4341,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -4220,8 +4356,6 @@ NameSpace Southwind
             Dim singleItem As Region = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -4313,7 +4447,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Territories As IQueryable(Of Territory)
             Get
-                  Dim repo = Southwind.Territory.GetRepo()
+                  Dim repo = WestWind.Territory.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.RegionID = _RegionID _
                        Select items
@@ -4328,14 +4462,16 @@ NameSpace Southwind
 				Return _RegionID
 			End Get
             Set(value As Integer)
-                _RegionID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "RegionID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _RegionID <> value Then
+					_RegionID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "RegionID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -4345,14 +4481,16 @@ NameSpace Southwind
 				Return _RegionDescription
 			End Get
             Set(value As String)
-                _RegionDescription = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "RegionDescription")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _RegionDescription <> value Then
+					_RegionDescription = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "RegionDescription")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -4401,7 +4539,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -4451,14 +4591,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -4476,11 +4616,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of Territory)
         Shared _testRepo As TestRepository(Of Territory)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Territory)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Territory)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -4512,7 +4649,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -4529,9 +4670,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -4545,12 +4686,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -4575,18 +4717,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of Territory, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Territory)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of Territory)
             
@@ -4611,7 +4752,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -4625,8 +4767,6 @@ NameSpace Southwind
             Dim singleItem As Territory = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -4718,7 +4858,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Regions As IQueryable(Of Region)
             Get
-                  Dim repo = Southwind.Region.GetRepo()
+                  Dim repo = WestWind.Region.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.RegionID = _RegionID _
                        Select items
@@ -4727,7 +4867,7 @@ NameSpace Southwind
 
         Public ReadOnly Property EmployeeTerritories As IQueryable(Of EmployeeTerritory)
             Get
-                  Dim repo = Southwind.EmployeeTerritory.GetRepo()
+                  Dim repo = WestWind.EmployeeTerritory.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.TerritoryID = _TerritoryID _
                        Select items
@@ -4742,14 +4882,16 @@ NameSpace Southwind
 				Return _TerritoryID
 			End Get
             Set(value As String)
-                _TerritoryID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "TerritoryID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _TerritoryID <> value Then
+					_TerritoryID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "TerritoryID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -4759,14 +4901,16 @@ NameSpace Southwind
 				Return _TerritoryDescription
 			End Get
             Set(value As String)
-                _TerritoryDescription = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "TerritoryDescription")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _TerritoryDescription <> value Then
+					_TerritoryDescription = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "TerritoryDescription")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -4776,14 +4920,16 @@ NameSpace Southwind
 				Return _RegionID
 			End Get
             Set(value As Integer)
-                _RegionID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "RegionID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _RegionID <> value Then
+					_RegionID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "RegionID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -4832,7 +4978,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -4882,14 +5030,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -4907,11 +5055,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of EmployeeTerritory)
         Shared _testRepo As TestRepository(Of EmployeeTerritory)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of EmployeeTerritory)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of EmployeeTerritory)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -4943,7 +5088,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -4960,9 +5109,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -4976,12 +5125,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -5006,18 +5156,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of EmployeeTerritory, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of EmployeeTerritory)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of EmployeeTerritory)
             
@@ -5042,7 +5191,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -5056,8 +5206,6 @@ NameSpace Southwind
             Dim singleItem As EmployeeTerritory = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -5149,7 +5297,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Employees As IQueryable(Of Employee)
             Get
-                  Dim repo = Southwind.Employee.GetRepo()
+                  Dim repo = WestWind.Employee.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.EmployeeID = _EmployeeID _
                        Select items
@@ -5158,7 +5306,7 @@ NameSpace Southwind
 
         Public ReadOnly Property Territories As IQueryable(Of Territory)
             Get
-                  Dim repo = Southwind.Territory.GetRepo()
+                  Dim repo = WestWind.Territory.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.TerritoryID = _TerritoryID _
                        Select items
@@ -5173,14 +5321,16 @@ NameSpace Southwind
 				Return _EmployeeID
 			End Get
             Set(value As Integer)
-                _EmployeeID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "EmployeeID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _EmployeeID <> value Then
+					_EmployeeID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "EmployeeID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5190,14 +5340,16 @@ NameSpace Southwind
 				Return _TerritoryID
 			End Get
             Set(value As String)
-                _TerritoryID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "TerritoryID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _TerritoryID <> value Then
+					_TerritoryID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "TerritoryID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5246,7 +5398,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -5296,14 +5450,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -5321,11 +5475,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of Employee)
         Shared _testRepo As TestRepository(Of Employee)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Employee)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Employee)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -5357,7 +5508,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -5374,9 +5529,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -5390,12 +5545,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -5420,18 +5576,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of Employee, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Employee)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of Employee)
             
@@ -5456,7 +5611,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -5470,8 +5626,6 @@ NameSpace Southwind
             Dim singleItem As Employee = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -5563,7 +5717,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Employees As IQueryable(Of Employee)
             Get
-                  Dim repo = Southwind.Employee.GetRepo()
+                  Dim repo = WestWind.Employee.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.EmployeeID = _ReportsTo _
                        Select items
@@ -5572,7 +5726,7 @@ NameSpace Southwind
 
         Public ReadOnly Property EmployeeTerritories As IQueryable(Of EmployeeTerritory)
             Get
-                  Dim repo = Southwind.EmployeeTerritory.GetRepo()
+                  Dim repo = WestWind.EmployeeTerritory.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.EmployeeID = _EmployeeID _
                        Select items
@@ -5581,7 +5735,7 @@ NameSpace Southwind
 
         Public ReadOnly Property Orders As IQueryable(Of Order)
             Get
-                  Dim repo = Southwind.Order.GetRepo()
+                  Dim repo = WestWind.Order.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.EmployeeID = _EmployeeID _
                        Select items
@@ -5596,14 +5750,16 @@ NameSpace Southwind
 				Return _EmployeeID
 			End Get
             Set(value As Integer)
-                _EmployeeID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "EmployeeID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _EmployeeID <> value Then
+					_EmployeeID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "EmployeeID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5613,14 +5769,16 @@ NameSpace Southwind
 				Return _LastName
 			End Get
             Set(value As String)
-                _LastName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "LastName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _LastName <> value Then
+					_LastName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "LastName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5630,14 +5788,16 @@ NameSpace Southwind
 				Return _FirstName
 			End Get
             Set(value As String)
-                _FirstName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "FirstName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _FirstName <> value Then
+					_FirstName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "FirstName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5647,14 +5807,16 @@ NameSpace Southwind
 				Return _Title
 			End Get
             Set(value As String)
-                _Title = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Title")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Title <> value Then
+					_Title = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Title")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5664,14 +5826,16 @@ NameSpace Southwind
 				Return _TitleOfCourtesy
 			End Get
             Set(value As String)
-                _TitleOfCourtesy = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "TitleOfCourtesy")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _TitleOfCourtesy <> value Then
+					_TitleOfCourtesy = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "TitleOfCourtesy")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5681,14 +5845,16 @@ NameSpace Southwind
 				Return _BirthDate
 			End Get
             Set(value As Date?)
-                _BirthDate = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "BirthDate")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _BirthDate <> value Then
+					_BirthDate = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "BirthDate")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5698,14 +5864,16 @@ NameSpace Southwind
 				Return _HireDate
 			End Get
             Set(value As Date?)
-                _HireDate = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "HireDate")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _HireDate <> value Then
+					_HireDate = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "HireDate")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5715,14 +5883,16 @@ NameSpace Southwind
 				Return _Address
 			End Get
             Set(value As String)
-                _Address = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Address")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Address <> value Then
+					_Address = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Address")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5732,14 +5902,16 @@ NameSpace Southwind
 				Return _City
 			End Get
             Set(value As String)
-                _City = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "City")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _City <> value Then
+					_City = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "City")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5749,14 +5921,16 @@ NameSpace Southwind
 				Return _Region
 			End Get
             Set(value As String)
-                _Region = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Region")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Region <> value Then
+					_Region = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Region")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5766,14 +5940,16 @@ NameSpace Southwind
 				Return _PostalCode
 			End Get
             Set(value As String)
-                _PostalCode = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "PostalCode")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _PostalCode <> value Then
+					_PostalCode = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "PostalCode")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5783,14 +5959,16 @@ NameSpace Southwind
 				Return _Country
 			End Get
             Set(value As String)
-                _Country = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Country")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Country <> value Then
+					_Country = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Country")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5800,14 +5978,16 @@ NameSpace Southwind
 				Return _HomePhone
 			End Get
             Set(value As String)
-                _HomePhone = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "HomePhone")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _HomePhone <> value Then
+					_HomePhone = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "HomePhone")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5817,14 +5997,16 @@ NameSpace Southwind
 				Return _Extension
 			End Get
             Set(value As String)
-                _Extension = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Extension")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Extension <> value Then
+					_Extension = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Extension")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5834,14 +6016,16 @@ NameSpace Southwind
 				Return _Photo
 			End Get
             Set(value As Byte())
-                _Photo = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Photo")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Photo Is value Then
+					_Photo = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Photo")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5851,14 +6035,16 @@ NameSpace Southwind
 				Return _Notes
 			End Get
             Set(value As String)
-                _Notes = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Notes")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Notes <> value Then
+					_Notes = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Notes")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5868,14 +6054,16 @@ NameSpace Southwind
 				Return _ReportsTo
 			End Get
             Set(value As Integer?)
-                _ReportsTo = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ReportsTo")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _ReportsTo <> value Then
+					_ReportsTo = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "ReportsTo")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5885,14 +6073,16 @@ NameSpace Southwind
 				Return _PhotoPath
 			End Get
             Set(value As String)
-                _PhotoPath = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "PhotoPath")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _PhotoPath <> value Then
+					_PhotoPath = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "PhotoPath")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -5941,7 +6131,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -5991,14 +6183,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()
@@ -6016,11 +6208,8 @@ NameSpace Southwind
 		' Built-in testing
         Shared TestItems As IList(Of Category)
         Shared _testRepo As TestRepository(Of Category)
-        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
-            _isLoaded = isLoaded
-        End Sub
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Category)(New Southwind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Category)(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
@@ -6052,7 +6241,11 @@ NameSpace Southwind
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
             Return _isNew
         End Function
-        Public Sub SetIsNew(isNew As Boolean)
+        Public Sub SetIsLoaded(isLoaded As Boolean) Implements IActiveRecord.SetIsLoaded
+            _isLoaded = isLoaded
+			If isLoaded Then OnLoaded()
+        End Sub
+        Public Sub SetIsNew(isNew As Boolean) Implements IActiveRecord.SetIsNew
             _isNew=isNew
         End Sub
         Private _isLoaded As Boolean
@@ -6069,9 +6262,9 @@ NameSpace Southwind
             Return _dirtyColumns
         End Function
 
-        Private _db As Southwind.NorthwindDB
+        Private _db As WestWind.NorthwindDB
         Public Sub New(connectionString As String, providerName As String)
-            _db = New Southwind.NorthwindDB(connectionString, providerName)
+            _db = New WestWind.NorthwindDB(connectionString, providerName)
             Init()            
          End Sub
         Private Sub Init()
@@ -6085,12 +6278,13 @@ NameSpace Southwind
             End If
             tbl=_repo.GetTable()
             _isNew = True
+			SetIsNew(True)
             OnCreated()       
       
         End Sub
         
         Public Sub New()
-             _db = New Southwind.NorthwindDB()
+             _db = New WestWind.NorthwindDB()
             Init()            
         End Sub
         
@@ -6115,18 +6309,17 @@ NameSpace Southwind
 
         Public Sub New(expression As Expression(Of Func(Of Category, Boolean)))
 			MyBase.New()
-            _isLoaded=_repo.Load(Me,expression)
-            If _isLoaded Then OnLoaded()
+			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
         Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Category)
-            Dim db As Southwind.NorthwindDB
+            Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
-                db = New Southwind.NorthwindDB()
+                db = New WestWind.NorthwindDB()
             Else
-                db = New Southwind.NorthwindDB(connectionString, providerName)
+                db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
             Dim _repo As IRepository(Of Category)
             
@@ -6151,7 +6344,8 @@ NameSpace Southwind
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
+                singleItem.SetIsLoaded(True)
+				singleItem.SetIsNew(False)
             End If
 
             Return singleItem
@@ -6165,8 +6359,6 @@ NameSpace Southwind
             Dim singleItem As Category = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
-                singleItem.OnLoaded()
-                singleItem.SetIsLoaded(true)
             End If
 
             Return singleItem
@@ -6258,7 +6450,7 @@ NameSpace Southwind
        #Region " Foreign Keys "
         Public ReadOnly Property Products As IQueryable(Of Product)
             Get
-                  Dim repo = Southwind.Product.GetRepo()
+                  Dim repo = WestWind.Product.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.CategoryID = _CategoryID _
                        Select items
@@ -6273,14 +6465,16 @@ NameSpace Southwind
 				Return _CategoryID
 			End Get
             Set(value As Integer)
-                _CategoryID = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CategoryID")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CategoryID <> value Then
+					_CategoryID = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CategoryID")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -6290,14 +6484,16 @@ NameSpace Southwind
 				Return _CategoryName
 			End Get
             Set(value As String)
-                _CategoryName = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CategoryName")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _CategoryName <> value Then
+					_CategoryName = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "CategoryName")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -6307,14 +6503,16 @@ NameSpace Southwind
 				Return _Description
 			End Get
             Set(value As String)
-                _Description = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Description")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Description <> value Then
+					_Description = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Description")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -6324,14 +6522,16 @@ NameSpace Southwind
 				Return _Picture
 			End Get
             Set(value As Byte())
-                _Picture = value
-                Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Picture")
-                If col IsNot Nothing Then
-                    If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
-                        _dirtyColumns.Add(col)
-                    End If
-                End If
-                OnChanged()
+				If _Picture Is value Then
+					_Picture = value
+					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "Picture")
+					If col IsNot Nothing Then
+						If Not _dirtyColumns.Any(Function(x) x.Name = col.Name) AndAlso _isLoaded Then
+							_dirtyColumns.Add(col)
+						End If
+					End If
+	                OnChanged()
+				End If
             End Set
         End Property
 
@@ -6380,7 +6580,9 @@ NameSpace Southwind
        
         Public Sub Add(provider As IDataProvider) Implements IActiveRecord.Add
 
-            Me.SetKeyValue(_repo.Add(Me,provider))
+			Dim newKey = _repo.Add(Me,provider)
+			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			SetIsNew(False)
             OnSaved()
         End Sub
         
@@ -6430,14 +6632,14 @@ NameSpace Southwind
             If rdr.Read() Then
                 Try
                     rdr.Load(Me)
-                    _isNew = False
-                    _isLoaded = True
+					SetIsNew(false)
+					SetIsLoaded(True)
                 Catch
-                    _isLoaded = False
+					SetIsLoaded(False)
                     Throw
                 End Try
             Else
-                _isLoaded = False
+				SetIsLoaded(False)
             End If
 
             If closeReader Then rdr.Dispose()

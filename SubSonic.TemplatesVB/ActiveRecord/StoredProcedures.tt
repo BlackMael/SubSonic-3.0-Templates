@@ -9,16 +9,17 @@ Imports System
 Imports SubSonic
 Imports SubSonic.Schema
 Imports SubSonic.DataProviders
+Imports System.Data
 
 NameSpace <#=Namespace#>
 
-	Public Class SPs
+	Partial Public Class <#=DatabaseName#>DB
 
 <#  foreach(var sp in sps){#>
-        Public Shared Function <#=sp.CleanName#>(<#=sp.ArgList#>) As StoredProcedure
-            Dim sp As New StoredProcedure("<#=sp.Name#>",ProviderFactory.GetProvider("<#=ConnectionStringName#>"))
+        Public Function <#=sp.CleanName#>(<#=sp.ArgList#>) As StoredProcedure
+            Dim sp As New StoredProcedure("<#=sp.Name#>",Me.Provider)
 <#      foreach(var par in sp.Parameters){#>
-            sp.Command.AddParameter("<#=par.Name#>",<#=par.Name#>)
+            sp.Command.AddParameter("<#=par.Name#>",<#=par.CleanName#>,DbType.<#=par.DbType#>)
 <#      }#>
             Return sp
         End Function

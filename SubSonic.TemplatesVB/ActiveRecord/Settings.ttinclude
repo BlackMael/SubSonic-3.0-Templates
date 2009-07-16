@@ -18,7 +18,7 @@
 
 <#+
 
-    const string Namespace = "Southwind";
+    const string Namespace = "WestWind";
     const string ConnectionStringName = "Northwind";
     
     //This is the name of your database and is used in naming
@@ -45,10 +45,12 @@
     }
     string CheckNullable(Column col){
         string result="";
-        if(col.IsNullable && col.SysType !="Byte()" && col.SysType !="String")
-            result="?";
+        if(IsNullableValue(col)) result="?";
         return result;
     }
+	bool IsNullableValue(Column col){
+        return col.IsNullable && col.SysType !="Byte()" && col.SysType !="String";
+	}
     string GetConnectionString(string connectionStringName){
         var _CurrentProject = GetCurrentProject();
         
@@ -238,6 +240,7 @@
         public string Name;
         public string CleanName;
         public string SysType;
+		public string DbType;
 
     }
     
