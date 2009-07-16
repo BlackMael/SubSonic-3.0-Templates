@@ -129,13 +129,13 @@ NameSpace WestWind
 				_Suppliers = value
 			End Set
 		End Property
-		Private _Orders As Query(Of Order)
-        Public Property Orders As Query(Of Order)
+		Private _Functions As Query(Of [Function])
+        Public Property Functions As Query(Of [Function])
 			Get
-				Return _Orders
+				Return _Functions
 			End Get
-			Set(value As Query(Of Order))
-				_Orders = value
+			Set(value As Query(Of [Function]))
+				_Functions = value
 			End Set
 		End Property
 		Private _Products As Query(Of Product)
@@ -316,7 +316,7 @@ NameSpace WestWind
             Customers = New Query(Of Customer)(_provider)
             Shippers = New Query(Of Shipper)(_provider)
             Suppliers = New Query(Of Supplier)(_provider)
-            Orders = New Query(Of Order)(_provider)
+            Functions = New Query(Of [Function])(_provider)
             Products = New Query(Of Product)(_provider)
             OrderDetails = New Query(Of OrderDetail)(_provider)
             CustomerCustomerDemos = New Query(Of CustomerCustomerDemo)(_provider)
@@ -333,7 +333,7 @@ NameSpace WestWind
             	_dataProvider.Schema.Tables.Add(New CustomersTable(_dataProvider))
             	_dataProvider.Schema.Tables.Add(New ShippersTable(_dataProvider))
             	_dataProvider.Schema.Tables.Add(New SuppliersTable(_dataProvider))
-            	_dataProvider.Schema.Tables.Add(New OrdersTable(_dataProvider))
+            	_dataProvider.Schema.Tables.Add(New FunctionTable(_dataProvider))
             	_dataProvider.Schema.Tables.Add(New ProductsTable(_dataProvider))
             	_dataProvider.Schema.Tables.Add(New OrderDetailsTable(_dataProvider))
             	_dataProvider.Schema.Tables.Add(New CustomerCustomerDemoTable(_dataProvider))

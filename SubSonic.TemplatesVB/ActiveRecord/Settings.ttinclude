@@ -32,6 +32,28 @@
     "sysdiagrams",
     "BuildVersion",
     };
+	
+	static string[] VbKeywords = new string[]{
+		"AddHandler","AddressOf","Alias","And","AndAlso","Ansi","As","Assembly","Auto",
+		"Boolean","ByRef","Byte","ByVal",
+		"Call","Case","Catch","CBool","CByte","CChar","CDate","CDec","CDbl","Char","CInt","Class","CLng","CObj","Const","CShort","CSng","CStr","CType",
+		"Date","Decimal","Declare","Default","Delegate","Dim","DirectCast","Do","Double",
+		"Each","Else","ElseIf","End","Enum","Erase","Error","Event","Exit",
+		"False","Finally","For","Friend","Function","Get","GetType","GoSub","GoTo",
+		"Handles",
+		"If","Implements","Imports","In","Inherits","Integer","Interface","Is",
+		"Let","Lib","Like","Long","Loop",
+		"Me","Mod","Module","MustInherit","MustOverride","MyBase","MyClass",
+		"Namespace","New","Next","Not","Nothing","NotInheritable","NotOverridable",
+		"Object","On","Option","Optional","Or","OrElse","Overloads","Overridable","Overrides",
+		"ParamArray","Preserve","Private","Property","Protected","Public",
+		"RaiseEvent","ReadOnly","ReDim","REM","RemoveHandler","Resume","Return",
+		"Select","Set","Shadows","Shared","Short","Single","Static","Step","Stop","String","Structure","Sub","SyncLock",
+		"Then","Throw","To","True","Try","TypeOf",
+		"Unicode","Until",
+		"Variant",
+		"When","While","With","WithEvents","WriteOnly",
+		"Xor"};
 
     string CleanUp(string tableName){
 	    string result=tableName;
@@ -43,6 +65,12 @@
     	
 	    return result;
     }
+	
+	static string EscapeIdentifier(string name){
+		if(VbKeywords.Any(x=>x==name)) name = "["+name+"]";
+		return name;
+	}
+	
     string CheckNullable(Column col){
         string result="";
         if(IsNullableValue(col)) result="?";
@@ -154,7 +182,9 @@
         public List<FKTable> FKTables;
         public string Name;
         public string CleanName;
+        public string VbCleanName;
         public string ClassName;
+        public string VbClassName;
         public string PrimaryKey;
         public string Schema;
         public string QueryableName;
@@ -196,6 +226,7 @@
     public class Column{
         public string Name;
         public string CleanName;
+        public string VbCleanName;
         public string SysType;
         public string DataType;
         public DbType DbType;
@@ -217,7 +248,9 @@
     public class SP{
         public string Name;
         public string CleanName;
+        public string VbCleanName;
         public string ClassName;
+        public string VbClassName;
         public List<SPParam> Parameters;
         public SP(){
             Parameters=new List<SPParam>();
@@ -227,7 +260,8 @@
                 StringBuilder sb=new StringBuilder();
                 int loopCount=1;
                 foreach(var par in Parameters){
-                    sb.AppendFormat("{1} As {0}", par.SysType,par.CleanName);
+                    sb.AppendFormat("{1} As {0}", par.SysType,EscapeIdentifier(par.CleanName) 
+					);
                     if(loopCount<Parameters.Count)
                         sb.Append(",");
                     loopCount++;
@@ -239,6 +273,7 @@
     public class SPParam{
         public string Name;
         public string CleanName;
+        public string VbCleanName;
         public string SysType;
 		public string DbType;
 

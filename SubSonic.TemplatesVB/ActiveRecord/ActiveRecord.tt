@@ -31,31 +31,31 @@ NameSpace <#=Namespace #>
     ''' <summary>
     ''' A class which represents the <#=tbl.Name #> table in the <#=DatabaseName#> Database.
     ''' </summary>
-    Public Partial Class <#=tbl.ClassName#>
+    Public Partial Class <#=EscapeIdentifier(tbl.ClassName)#>
 		Implements IActiveRecord
 
 		' Built-in testing
-        Shared TestItems As IList(Of <#=tbl.ClassName#>)
-        Shared _testRepo As TestRepository(Of <#=tbl.ClassName#>)
+        Shared TestItems As IList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
+        Shared _testRepo As TestRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of <#=tbl.ClassName#>)(New <#=Namespace#>.<#=DatabaseName#>DB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)(New <#=Namespace#>.<#=DatabaseName#>DB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
             SetTestRepo()
         End Sub
-        Public Shared Sub Setup(testlist As List(Of <#=tbl.ClassName#>))
+        Public Shared Sub Setup(testlist As List(Of <#=EscapeIdentifier(tbl.ClassName)#>))
             SetTestRepo()
             _testRepo._items = testlist
         End Sub
-        Public Shared Sub Setup(item As <#=tbl.ClassName#>)
+        Public Shared Sub Setup(item As <#=EscapeIdentifier(tbl.ClassName)#>)
             SetTestRepo()
             _testRepo._items.Add(item)
         End Sub
         Public Shared Sub Setup(testItems As Integer)
             SetTestRepo()
             For i As Integer = 0 To testItems - 1
-                Dim item As New <#=tbl.ClassName#>()
+                Dim item As New <#=EscapeIdentifier(tbl.ClassName)#>()
                 _testRepo._items.Add(item)
             Next i
         End Sub
@@ -64,7 +64,7 @@ NameSpace <#=Namespace #>
 
 
 
-        Private _repo As IRepository(Of <#=tbl.ClassName#>)
+        Private _repo As IRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)
         Private tbl As ITable
         Private _isNew As Boolean
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
@@ -100,10 +100,10 @@ NameSpace <#=Namespace #>
             TestMode = Me._db.Provider.ConnectionString.Equals("test", StringComparison.InvariantCultureIgnoreCase)
             _dirtyColumns = New List(Of IColumn)()
             If TestMode Then
-                <#=tbl.ClassName#>.SetTestRepo()
+                <#=EscapeIdentifier(tbl.ClassName)#>.SetTestRepo()
                 _repo=_testRepo
             Else
-                _repo = New SubSonicRepository(Of <#=tbl.ClassName#>)(_db)
+                _repo = New SubSonicRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)(_db)
             End If
             tbl=_repo.GetTable()
             _isNew = True
@@ -136,40 +136,40 @@ NameSpace <#=Namespace #>
             End Get
         End Property
 
-        Public Sub New(expression As Expression(Of Func(Of <#=tbl.ClassName#>, Boolean)))
+        Public Sub New(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean)))
 			MyBase.New()
 			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
-        Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of <#=tbl.ClassName#>)
+        Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Dim db As <#=Namespace#>.<#=DatabaseName#>DB
             If String.IsNullOrEmpty(connectionString)
                 db = New <#=Namespace#>.<#=DatabaseName#>DB()
             Else
                 db = New <#=Namespace#>.<#=DatabaseName#>DB(connectionString, providerName)
             End If
-            Dim _repo As IRepository(Of <#=tbl.ClassName#>)
+            Dim _repo As IRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             
             If db.TestMode Then
-                <#=tbl.ClassName#>.SetTestRepo()
+                <#=EscapeIdentifier(tbl.ClassName)#>.SetTestRepo()
                 _repo = _testRepo
             Else
-                _repo = New SubSonicRepository(Of <#=tbl.ClassName#>)(db)
+                _repo = New SubSonicRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)(db)
             End If
             Return _repo
         End Function
         
-        Friend Shared Function GetRepo() As IRepository(Of <#=tbl.ClassName#>)
+        Friend Shared Function GetRepo() As IRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Return GetRepo(String.Empty,String.Empty)
         End Function
         
-        Public Shared Function SingleOrDefault(expression As Expression(Of Func(Of <#=tbl.ClassName#>, Boolean))) As <#=tbl.ClassName#>
+        Public Shared Function SingleOrDefault(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean))) As <#=EscapeIdentifier(tbl.ClassName)#>
 
             Dim repo = GetRepo()
             Dim results = repo.Find(expression)
-            Dim singleItem As <#=tbl.ClassName#> = Nothing
+            Dim singleItem As <#=EscapeIdentifier(tbl.ClassName)#> = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
@@ -180,12 +180,12 @@ NameSpace <#=Namespace #>
             Return singleItem
         End Function  
         
-        Public Shared Function SingleOrDefault(expression As Expression(Of Func(Of <#=tbl.ClassName#>, Boolean)), _
+        Public Shared Function SingleOrDefault(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean)), _
 											   connectionString As String, _
-											   providerName As String) As <#=tbl.ClassName#>
+											   providerName As String) As <#=EscapeIdentifier(tbl.ClassName)#>
 			Dim repo = GetRepo(connectionString,providerName)
             Dim results = repo.Find(expression)
-            Dim singleItem As <#=tbl.ClassName#> = Nothing
+            Dim singleItem As <#=EscapeIdentifier(tbl.ClassName)#> = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
             End If
@@ -194,43 +194,43 @@ NameSpace <#=Namespace #>
 		End Function
         
         
-        Public Shared Function Exists(expression As Expression(Of Func(Of <#=tbl.ClassName#>, Boolean)), connectionString As String, providerName As String) As Boolean
+        Public Shared Function Exists(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean)), connectionString As String, providerName As String) As Boolean
         	Return All(connectionString,providerName).Any(expression)
         End Function
 		
-        Public Shared Function Exists(expression As Expression(Of Func(Of <#=tbl.ClassName#>, Boolean))) As Boolean
+        Public Shared Function Exists(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean))) As Boolean
             Return All().Any(expression)
         End Function        
 
-        Public Shared Function Find(expression As Expression(Of Func(Of <#=tbl.ClassName#>, Boolean))) As IList(Of <#=tbl.ClassName#>)
+        Public Shared Function Find(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean))) As IList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Dim repo = GetRepo()
             Return repo.Find(expression).ToList()
         End Function
         
-        Public Shared Function Find(expression As Expression(Of Func(Of <#=tbl.ClassName#>, Boolean)), connectionString As String, providerName As String) As IList(Of <#=tbl.ClassName#>)
+        Public Shared Function Find(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean)), connectionString As String, providerName As String) As IList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Dim repo = GetRepo(connectionString,providerName)
             Return repo.Find(expression).ToList()
         End Function
-        Public Shared Function All(connectionString As String, providerName As String) As IQueryable(Of <#=tbl.ClassName#>)
+        Public Shared Function All(connectionString As String, providerName As String) As IQueryable(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Return GetRepo(connectionString,providerName).GetAll()
         End Function
-        Public Shared Function All() As IQueryable(Of <#=tbl.ClassName#>)
+        Public Shared Function All() As IQueryable(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Return GetRepo().GetAll()
         End Function
         
-        Public Shared Function GetPaged(sortBy As String, pageIndex As Integer, pageSize As Integer, connectionString As String, providerName As String) As PagedList(Of <#=tbl.ClassName#>)
+        Public Shared Function GetPaged(sortBy As String, pageIndex As Integer, pageSize As Integer, connectionString As String, providerName As String) As PagedList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Return GetRepo(connectionString,providerName).GetPaged(sortBy, pageIndex, pageSize)
         End Function
       
-        Public Shared Function GetPaged(sortBy As String, pageIndex As Integer, pageSize As Integer) As PagedList(Of <#=tbl.ClassName#>)
+        Public Shared Function GetPaged(sortBy As String, pageIndex As Integer, pageSize As Integer) As PagedList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Return GetRepo().GetPaged(sortBy, pageIndex, pageSize)
         End Function
 
-        Public Shared Function GetPaged(pageIndex As Integer, pageSize As Integer, connectionString As String, providerName As String) As PagedList(Of <#=tbl.ClassName#>)
+        Public Shared Function GetPaged(pageIndex As Integer, pageSize As Integer, connectionString As String, providerName As String) As PagedList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Return GetRepo(connectionString,providerName).GetPaged(pageIndex, pageSize)
         End Function
 
-        Public Shared Function GetPaged(pageIndex As Integer, pageSize As Integer) As PagedList(Of <#=tbl.ClassName#>)
+        Public Shared Function GetPaged(pageIndex As Integer, pageSize As Integer) As PagedList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Return GetRepo().GetPaged(pageIndex, pageSize)
         End Function
 
@@ -254,8 +254,8 @@ NameSpace <#=Namespace #>
         End Function
 
         Public Overrides Function Equals(obj As Object) As Boolean
-            If obj.GetType() Is GetType(<#=tbl.ClassName#>) Then
-                Dim compareItem As <#=tbl.ClassName#> = obj
+            If obj.GetType() Is GetType(<#=EscapeIdentifier(tbl.ClassName)#>) Then
+                Dim compareItem As <#=EscapeIdentifier(tbl.ClassName)#> = obj
                 Return compareItem.KeyValue() = Me.KeyValue()
             Else
                 Return MyBase.Equals(obj)
@@ -293,7 +293,7 @@ NameSpace <#=Namespace #>
                     
                
 #>
-        Public ReadOnly Property <#=propName #> As IQueryable(Of <#=fk.OtherClass #>)
+        Public ReadOnly Property <#=EscapeIdentifier(propName) #> As IQueryable(Of <#=EscapeIdentifier(fk.OtherClass) #>)
             Get
                   Dim repo = <#=Namespace #>.<#=fk.OtherClass#>.GetRepo()
                   Return From items In repo.GetAll() _
@@ -319,7 +319,7 @@ NameSpace <#=Namespace #>
 			}
 #>
         Private _<#=col.CleanName #> As <#=col.SysType #><#=CheckNullable(col)#>
-        Public Property <#=col.CleanName #> As <#=col.SysType #><#=CheckNullable(col)#>
+        Public Property <#=EscapeIdentifier(col.CleanName) #> As <#=col.SysType #><#=CheckNullable(col)#>
             Get
 				Return _<#=col.CleanName #>
 			End Get
@@ -493,12 +493,12 @@ NameSpace <#=Namespace #>
         End Sub
 
 
-        Public Shared Sub Delete(expression As Expression(Of Func(Of <#=tbl.ClassName#>, Boolean)))
+        Public Shared Sub Delete(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean)))
             Dim repo = GetRepo()
             
 <#if(tbl.HasLogicalDelete()){#>
             
-            Dim items As List(Of <#=tbl.ClassName#>) = repo.GetAll().Where(expression).ToList()
+            Dim items As List(Of <#=EscapeIdentifier(tbl.ClassName)#>) = repo.GetAll().Where(expression).ToList()
             items.ForEach(Function(x) x.<#=tbl.DeleteColumn.CleanName#> = True)
             repo.Update(items)
             
@@ -511,7 +511,7 @@ NameSpace <#=Namespace #>
 
         <#if(tbl.HasLogicalDelete()){#>
         
-        Public Shared Sub Destroy(expression As Func(Of <#=tbl.ClassName#>, Boolean))
+        Public Shared Sub Destroy(expression As Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean))
             Dim repo = GetRepo()
             repo.Delete(expression)
         End Sub

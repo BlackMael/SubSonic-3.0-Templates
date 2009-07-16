@@ -277,9 +277,9 @@ NameSpace WestWind
             End Get
         End Property
 
-        Public ReadOnly Property Orders As IQueryable(Of Order)
+        Public ReadOnly Property Functions As IQueryable(Of [Function])
             Get
-                  Dim repo = WestWind.Order.GetRepo()
+                  Dim repo = WestWind.Function.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.CustomerID = _CustomerID _
                        Select items
@@ -859,9 +859,9 @@ NameSpace WestWind
         End Function
         
        #Region " Foreign Keys "
-        Public ReadOnly Property Orders As IQueryable(Of Order)
+        Public ReadOnly Property Functions As IQueryable(Of [Function])
             Get
-                  Dim repo = WestWind.Order.GetRepo()
+                  Dim repo = WestWind.Function.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.ShipVia = _ShipperID _
                        Select items
@@ -1642,33 +1642,33 @@ NameSpace WestWind
     
     
     ''' <summary>
-    ''' A class which represents the Orders table in the Northwind Database.
+    ''' A class which represents the Function table in the Northwind Database.
     ''' </summary>
-    Public Partial Class Order
+    Public Partial Class [Function]
 		Implements IActiveRecord
 
 		' Built-in testing
-        Shared TestItems As IList(Of Order)
-        Shared _testRepo As TestRepository(Of Order)
+        Shared TestItems As IList(Of [Function])
+        Shared _testRepo As TestRepository(Of [Function])
         Private Shared Sub SetTestRepo()
-			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of Order)(New WestWind.NorthwindDB())
+			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of [Function])(New WestWind.NorthwindDB())
         End Sub
         Public Shared Sub ResetTestRepo()
             _testRepo = Nothing
             SetTestRepo()
         End Sub
-        Public Shared Sub Setup(testlist As List(Of Order))
+        Public Shared Sub Setup(testlist As List(Of [Function]))
             SetTestRepo()
             _testRepo._items = testlist
         End Sub
-        Public Shared Sub Setup(item As Order)
+        Public Shared Sub Setup(item As [Function])
             SetTestRepo()
             _testRepo._items.Add(item)
         End Sub
         Public Shared Sub Setup(testItems As Integer)
             SetTestRepo()
             For i As Integer = 0 To testItems - 1
-                Dim item As New Order()
+                Dim item As New [Function]()
                 _testRepo._items.Add(item)
             Next i
         End Sub
@@ -1677,7 +1677,7 @@ NameSpace WestWind
 
 
 
-        Private _repo As IRepository(Of Order)
+        Private _repo As IRepository(Of [Function])
         Private tbl As ITable
         Private _isNew As Boolean
         Public Function IsNew() As Boolean Implements IActiveRecord.IsNew
@@ -1713,10 +1713,10 @@ NameSpace WestWind
             TestMode = Me._db.Provider.ConnectionString.Equals("test", StringComparison.InvariantCultureIgnoreCase)
             _dirtyColumns = New List(Of IColumn)()
             If TestMode Then
-                Order.SetTestRepo()
+                [Function].SetTestRepo()
                 _repo=_testRepo
             Else
-                _repo = New SubSonicRepository(Of Order)(_db)
+                _repo = New SubSonicRepository(Of [Function])(_db)
             End If
             tbl=_repo.GetTable()
             _isNew = True
@@ -1749,40 +1749,40 @@ NameSpace WestWind
             End Get
         End Property
 
-        Public Sub New(expression As Expression(Of Func(Of Order, Boolean)))
+        Public Sub New(expression As Expression(Of Func(Of [Function], Boolean)))
 			MyBase.New()
 			SetIsLoaded(_repo.Load(Me,expression))
         End Sub
         
        
         
-        Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of Order)
+        Friend Shared Function GetRepo(connectionString As String, providerName As String) As IRepository(Of [Function])
             Dim db As WestWind.NorthwindDB
             If String.IsNullOrEmpty(connectionString)
                 db = New WestWind.NorthwindDB()
             Else
                 db = New WestWind.NorthwindDB(connectionString, providerName)
             End If
-            Dim _repo As IRepository(Of Order)
+            Dim _repo As IRepository(Of [Function])
             
             If db.TestMode Then
-                Order.SetTestRepo()
+                [Function].SetTestRepo()
                 _repo = _testRepo
             Else
-                _repo = New SubSonicRepository(Of Order)(db)
+                _repo = New SubSonicRepository(Of [Function])(db)
             End If
             Return _repo
         End Function
         
-        Friend Shared Function GetRepo() As IRepository(Of Order)
+        Friend Shared Function GetRepo() As IRepository(Of [Function])
             Return GetRepo(String.Empty,String.Empty)
         End Function
         
-        Public Shared Function SingleOrDefault(expression As Expression(Of Func(Of Order, Boolean))) As Order
+        Public Shared Function SingleOrDefault(expression As Expression(Of Func(Of [Function], Boolean))) As [Function]
 
             Dim repo = GetRepo()
             Dim results = repo.Find(expression)
-            Dim singleItem As Order = Nothing
+            Dim singleItem As [Function] = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
                 singleItem.OnLoaded()
@@ -1793,12 +1793,12 @@ NameSpace WestWind
             Return singleItem
         End Function  
         
-        Public Shared Function SingleOrDefault(expression As Expression(Of Func(Of Order, Boolean)), _
+        Public Shared Function SingleOrDefault(expression As Expression(Of Func(Of [Function], Boolean)), _
 											   connectionString As String, _
-											   providerName As String) As Order
+											   providerName As String) As [Function]
 			Dim repo = GetRepo(connectionString,providerName)
             Dim results = repo.Find(expression)
-            Dim singleItem As Order = Nothing
+            Dim singleItem As [Function] = Nothing
             If results.Count() > 0 Then
                 singleItem = results.ToList()(0)
             End If
@@ -1807,43 +1807,43 @@ NameSpace WestWind
 		End Function
         
         
-        Public Shared Function Exists(expression As Expression(Of Func(Of Order, Boolean)), connectionString As String, providerName As String) As Boolean
+        Public Shared Function Exists(expression As Expression(Of Func(Of [Function], Boolean)), connectionString As String, providerName As String) As Boolean
         	Return All(connectionString,providerName).Any(expression)
         End Function
 		
-        Public Shared Function Exists(expression As Expression(Of Func(Of Order, Boolean))) As Boolean
+        Public Shared Function Exists(expression As Expression(Of Func(Of [Function], Boolean))) As Boolean
             Return All().Any(expression)
         End Function        
 
-        Public Shared Function Find(expression As Expression(Of Func(Of Order, Boolean))) As IList(Of Order)
+        Public Shared Function Find(expression As Expression(Of Func(Of [Function], Boolean))) As IList(Of [Function])
             Dim repo = GetRepo()
             Return repo.Find(expression).ToList()
         End Function
         
-        Public Shared Function Find(expression As Expression(Of Func(Of Order, Boolean)), connectionString As String, providerName As String) As IList(Of Order)
+        Public Shared Function Find(expression As Expression(Of Func(Of [Function], Boolean)), connectionString As String, providerName As String) As IList(Of [Function])
             Dim repo = GetRepo(connectionString,providerName)
             Return repo.Find(expression).ToList()
         End Function
-        Public Shared Function All(connectionString As String, providerName As String) As IQueryable(Of Order)
+        Public Shared Function All(connectionString As String, providerName As String) As IQueryable(Of [Function])
             Return GetRepo(connectionString,providerName).GetAll()
         End Function
-        Public Shared Function All() As IQueryable(Of Order)
+        Public Shared Function All() As IQueryable(Of [Function])
             Return GetRepo().GetAll()
         End Function
         
-        Public Shared Function GetPaged(sortBy As String, pageIndex As Integer, pageSize As Integer, connectionString As String, providerName As String) As PagedList(Of Order)
+        Public Shared Function GetPaged(sortBy As String, pageIndex As Integer, pageSize As Integer, connectionString As String, providerName As String) As PagedList(Of [Function])
             Return GetRepo(connectionString,providerName).GetPaged(sortBy, pageIndex, pageSize)
         End Function
       
-        Public Shared Function GetPaged(sortBy As String, pageIndex As Integer, pageSize As Integer) As PagedList(Of Order)
+        Public Shared Function GetPaged(sortBy As String, pageIndex As Integer, pageSize As Integer) As PagedList(Of [Function])
             Return GetRepo().GetPaged(sortBy, pageIndex, pageSize)
         End Function
 
-        Public Shared Function GetPaged(pageIndex As Integer, pageSize As Integer, connectionString As String, providerName As String) As PagedList(Of Order)
+        Public Shared Function GetPaged(pageIndex As Integer, pageSize As Integer, connectionString As String, providerName As String) As PagedList(Of [Function])
             Return GetRepo(connectionString,providerName).GetPaged(pageIndex, pageSize)
         End Function
 
-        Public Shared Function GetPaged(pageIndex As Integer, pageSize As Integer) As PagedList(Of Order)
+        Public Shared Function GetPaged(pageIndex As Integer, pageSize As Integer) As PagedList(Of [Function])
             Return GetRepo().GetPaged(pageIndex, pageSize)
         End Function
 
@@ -1867,8 +1867,8 @@ NameSpace WestWind
         End Function
 
         Public Overrides Function Equals(obj As Object) As Boolean
-            If obj.GetType() Is GetType(Order) Then
-                Dim compareItem As Order = obj
+            If obj.GetType() Is GetType([Function]) Then
+                Dim compareItem As [Function] = obj
                 Return compareItem.KeyValue() = Me.KeyValue()
             Else
                 Return MyBase.Equals(obj)
@@ -2273,7 +2273,7 @@ NameSpace WestWind
         End Sub
 
 
-        Public Shared Sub Delete(expression As Expression(Of Func(Of Order, Boolean)))
+        Public Shared Sub Delete(expression As Expression(Of Func(Of [Function], Boolean)))
             Dim repo = GetRepo()
             
        
@@ -3137,9 +3137,9 @@ NameSpace WestWind
         End Function
         
        #Region " Foreign Keys "
-        Public ReadOnly Property Orders As IQueryable(Of Order)
+        Public ReadOnly Property Functions As IQueryable(Of [Function])
             Get
-                  Dim repo = WestWind.Order.GetRepo()
+                  Dim repo = WestWind.Function.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.OrderID = _OrderID _
                        Select items
@@ -5733,9 +5733,9 @@ NameSpace WestWind
             End Get
         End Property
 
-        Public ReadOnly Property Orders As IQueryable(Of Order)
+        Public ReadOnly Property Functions As IQueryable(Of [Function])
             Get
-                  Dim repo = WestWind.Order.GetRepo()
+                  Dim repo = WestWind.Function.GetRepo()
                   Return From items In repo.GetAll() _
                        	Where items.EmployeeID = _EmployeeID _
                        Select items

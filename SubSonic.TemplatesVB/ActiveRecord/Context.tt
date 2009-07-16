@@ -111,12 +111,12 @@ NameSpace <#=Namespace#>
         if(!ExcludeTables.Contains(tbl.Name))
         {
 #>
-		Private _<#=tbl.QueryableName#> As Query(Of <#=tbl.ClassName#>)
-        Public Property <#=tbl.QueryableName#> As Query(Of <#=tbl.ClassName#>)
+		Private _<#=tbl.QueryableName#> As Query(Of <#=EscapeIdentifier(tbl.ClassName)#>)
+        Public Property <#=EscapeIdentifier(tbl.QueryableName)#> As Query(Of <#=EscapeIdentifier(tbl.ClassName)#>)
 			Get
 				Return _<#=tbl.QueryableName#>
 			End Get
-			Set(value As Query(Of <#=tbl.ClassName#>))
+			Set(value As Query(Of <#=EscapeIdentifier(tbl.ClassName)#>))
 				_<#=tbl.QueryableName#> = value
 			End Set
 		End Property
@@ -229,7 +229,7 @@ NameSpace <#=Namespace#>
         if(!ExcludeTables.Contains(tbl.Name))
         {
 #>
-            <#=tbl.QueryableName#> = New Query(Of <#=tbl.ClassName#>)(_provider)
+            <#=EscapeIdentifier(tbl.QueryableName)#> = New Query(Of <#=EscapeIdentifier(tbl.ClassName)#>)(_provider)
 <#
         }
 #>

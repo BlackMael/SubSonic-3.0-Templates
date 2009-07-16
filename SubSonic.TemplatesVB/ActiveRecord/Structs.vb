@@ -428,16 +428,16 @@ NameSpace WestWind
                     
 	End Class        
 		''' <summary>
-		''' Table: Orders
+		''' Table: Function
 		''' Primary Key: OrderID
 		''' </summary>
 
-	Public Class OrdersTable
+	Public Class FunctionTable
 		Inherits DatabaseTable
 
 		Public Sub New(provider As IDataProvider)
-			MyBase.New("Orders",provider)
-			ClassName = "Order"
+			MyBase.New("Function",provider)
+			ClassName = "Function"
 			SchemaName = "dbo"
                 
 				Columns.Add(New DatabaseColumn("OrderID", Me) With { _
