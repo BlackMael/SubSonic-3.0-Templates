@@ -35,7 +35,6 @@ NameSpace <#=Namespace #>
 		Implements IActiveRecord
 
 		' Built-in testing
-        Shared TestItems As IList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
         Shared _testRepo As TestRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)
         Private Shared Sub SetTestRepo()
 			iF _testRepo Is Nothing Then _testRepo = New TestRepository(Of <#=EscapeIdentifier(tbl.ClassName)#>)(New <#=Namespace#>.<#=DatabaseName#>DB())
