@@ -1,4 +1,3 @@
-<#@ template language="C#v3.5" debug="True" hostspecific="True" #>
 <#@ assembly name="EnvDTE" #>
 <#@ assembly name="System.Core.dll" #>
 <#@ assembly name="System.Data" #>

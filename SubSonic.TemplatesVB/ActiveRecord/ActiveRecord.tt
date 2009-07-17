@@ -1,3 +1,4 @@
+<#@ template language="C#v3.5" debug="True" hostspecific="True" #>
 <#@ output extension=".vb" #>
 <#@ include file="SQLServer.ttinclude" #>
 Imports System
@@ -260,6 +261,10 @@ NameSpace <#=Namespace #>
                 Return MyBase.Equals(obj)
             End If
         End Function
+		
+		Public Overrides Function GetHashCode As Integer
+			Return Me.<#=tbl.PK.CleanName #>
+		End Function
 
         Public Function DescriptorValue() As String Implements IActiveRecord.DescriptorValue
             Return Me.<#=tbl.Descriptor.CleanName #>.ToString()
