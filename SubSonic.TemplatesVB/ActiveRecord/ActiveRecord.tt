@@ -327,7 +327,11 @@ NameSpace <#=Namespace #>
 				Return _<#=col.CleanName #>
 			End Get
             Set(value As <#=col.SysType #><#=CheckNullable(col)#>)
+<#			if (col.SysType=="String") {#>
+				If Not String.Equals(_<#=col.CleanName #>, value) Then
+<# } else { #>
 				If _<#=col.CleanName #> <#=col.SysType=="Byte()" ? "Is" : "<>"#> value Then
+<# } #>
 					_<#=col.CleanName #> = value
 					Dim col = tbl.Columns.SingleOrDefault(Function(x) x.Name = "<#=col.Name #>")
 					If col IsNot Nothing Then
