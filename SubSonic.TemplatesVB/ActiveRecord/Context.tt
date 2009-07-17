@@ -154,8 +154,7 @@ NameSpace <#=Namespace#>
             Dim lambda As LambdaExpression = column
             Dim result As SqlQuery = New Delete(Of T)(Me.Provider)
             result = result.From(Of T)()
-            Dim c As Global.SubSonic.Query.Constraint = lambda.ParseConstraint()
-            result.Constraints.Add(c)
+            result.Constraints = lambda.ParseConstraints.ToList()
             Return result
         End Function
 
