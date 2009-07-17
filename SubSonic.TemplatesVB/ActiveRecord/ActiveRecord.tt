@@ -421,8 +421,13 @@ NameSpace <#=Namespace #>
 <#if(tbl.Columns.Any(x=>x.Name=="ModifiedBy")){#>
             If String.IsNullOrEmpty(Me.ModifiedBy) Then Me.ModifiedBy = Environment.UserName
 <#}#>
-			Dim newKey = _repo.Add(Me,provider)
-			If newKey <> KeyValue() Then Me.SetKeyValue(newKey)
+			Dim key = KeyValue()
+			If key Is Nothing Then
+				Dim newKey = _repo.Add(Me,provider)
+				Me.SetKeyValue(newKey)
+			Else
+				_repo.Add(Me,provider)
+			End If
 			SetIsNew(False)
             OnSaved()
         End Sub
