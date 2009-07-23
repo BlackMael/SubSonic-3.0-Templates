@@ -258,6 +258,8 @@ string GetSysType(string sqlType){
 			sysType=  "Decimal";
 			 break;
 		case "tinyint":
+			sysType:  "Byte";
+			break;
 		case "bit":
 			sysType=  "Boolean";
 			   break;
