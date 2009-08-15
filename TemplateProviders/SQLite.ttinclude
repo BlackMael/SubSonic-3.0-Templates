@@ -4,6 +4,35 @@
 <#+
 SQLiteConnection conn;
 
+List<FKTable> LoadFKTables(string tableName){
+    string fkSQL = @"PRAGMA foreign_key_list('{0}');";    
+    
+    var result=new List<FKTable>();
+    
+    using(conn=new SQLiteConnection(ConnectionString)){
+        try{
+            conn.Open();
+        
+            var cmd=new SQLiteCommand(string.Format(fkSQL,tableName),conn);            
+            var rdr=cmd.ExecuteReader(CommandBehavior.CloseConnection);
+            while(rdr.Read()){
+                FKTable fk=new FKTable();
+                fk.ThisTable=tableName;
+                fk.ThisColumn=rdr["to"].ToString();
+                fk.OtherTable=rdr["table"].ToString();
+                fk.OtherColumn=rdr["from"].ToString();
+                fk.OtherClass=Inflector.MakeSingular(CleanUp(fk.OtherTable));
+                fk.OtherQueryable=Inflector.MakePlural(fk.OtherClass);
+                result.Add(fk);
+            }
+        }
+        catch(Exception ex){
+        }
+    }    
+    return result;
+}
+
+
 List<Table> LoadTables(){
     var result=new List<Table>();
     
@@ -22,11 +51,14 @@ List<Table> LoadTables(){
 
                 //add it
                 Table tbl = new Table();
-                tbl.PrimaryKey="";
-                tbl.FKTables=new List<FKTable>();
-                tbl.Name = row["TABLE_NAME"].ToString();
+                tbl.PrimaryKey=""; 
+                tbl.Name = row["TABLE_NAME"].ToString();                
                 tbl.CleanName=CleanUp(tbl.Name);
                 tbl.ClassName=Inflector.MakeSingular(tbl.CleanName);
+                
+                /** Added support for FK **/
+                tbl.FKTables=LoadFKTables(tbl.Name);
+                
                 tbl.QueryableName=Inflector.MakePlural(tbl.ClassName);
                 result.Add(tbl);
             }
@@ -41,13 +73,14 @@ List<Table> LoadTables(){
             foreach (var row in columns) {
                 Column col=new Column();
                 col.Name=row["COLUMN_NAME"].ToString();
+                //col.Name=row["COLUMN_NAME"].ToString()+"_"+row["DATA_TYPE"].ToString();
                 col.CleanName=CleanUp(col.Name);
                 col.DataType=row["DATA_TYPE"].ToString();
                 
                 col.SysType=GetSysType(col.DataType);
                 col.DbType=GetDbType(col.DataType);
                 
-                col.AutoIncrement=row["AUTOINCREMENT"].ToString()=="True";
+                col.AutoIncrement=(row["DATA_TYPE"].ToString()=="integer" && row["PRIMARY_KEY"].ToString()=="True"? true : false) ;
                 col.IsNullable=row["IS_NULLABLE"].ToString()=="True";
                 col.IsPK=row["PRIMARY_KEY"].ToString()=="True";
                 
@@ -73,12 +106,15 @@ string GetSysType(string sqlType){
 	switch (sqlType) {
 		case "bigint":
 		case "smallint":
+		    sysType= "short";
+			break;
 		case "int":
 			sysType= "int";
 			break;
 		case "long":
 		case "integer":
 			sysType= "long";
+			break;
 		case "guid":
 			sysType=  "Guid";
 			 break;
@@ -90,6 +126,8 @@ string GetSysType(string sqlType){
 			sysType="double";
 			break;
 		case "real":
+		    sysType=  "float";
+			 break;
 		case "numeric":
 		case "smallmoney":
 		case "decimal":
@@ -97,6 +135,8 @@ string GetSysType(string sqlType){
 			sysType=  "decimal";
 			 break;
 		case "tinyint":
+		    sysType=  "byte";
+			   break;
 		case "bit":
 			sysType=  "bool";
 			   break;
