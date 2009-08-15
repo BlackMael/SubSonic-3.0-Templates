@@ -249,7 +249,11 @@ NameSpace <#=Namespace #>
         End Sub
         
         Public Overrides Function ToString() As String
-            Return Me.<#=tbl.Descriptor.CleanName #>.ToString()
+		<# if (tbl.ClassName == tbl.Descriptor.CleanName){ #>
+			Return Me.<#=ExtendNameSuffix(tbl.Descriptor.CleanName) #>.ToString()
+		<# } else { #>
+			Return Me.<#=tbl.Descriptor.CleanName #>.ToString()
+		<# } #>
         End Function
 
         Public Overrides Function Equals(obj As Object) As Boolean
@@ -318,7 +322,7 @@ NameSpace <#=Namespace #>
 
 			if (tbl.ClassName == col.CleanName)
 			{
-				col.CleanName += ColumnSuffix;
+				col.CleanName += NameSuffix;
 			}
 #>
         Private _<#=col.CleanName #> As <#=col.SysType #><#=CheckNullable(col)#>
