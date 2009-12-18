@@ -54,6 +54,7 @@
     <Reference Include="System.Data.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -80,11 +81,6 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ActiveRecord\ActiveRecord.vb">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ActiveRecord.tt</DependentUpon>
-    </Compile>
     <Compile Include="ActiveRecord\Context.vb">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -133,8 +129,14 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Context.vb</LastGenOutput>
     </None>
-    <None Include="ActiveRecord\Settings.ttinclude" />
-    <None Include="ActiveRecord\SQLServer.ttinclude" />
+    <None Include="ActiveRecord\Settings.ttinclude">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Settings.cs</LastGenOutput>
+    </None>
+    <None Include="ActiveRecord\SQLServer.ttinclude">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>SQLServer.cs</LastGenOutput>
+    </None>
     <None Include="ActiveRecord\StoredProcedures.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>StoredProcedures.vb</LastGenOutput>
@@ -158,8 +160,26 @@
     <Service Include="{B4F97281-0DBD-4835-9ED8-7DFB966E87FF}" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ActiveRecord\ActiveRecord.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ActiveRecord.tt</DependentUpon>
+    </Compile>
     <Compile Include="ActiveRecord\Tests\BugFixes.vb" />
     <Compile Include="ActiveRecord\Tests\FetchTests.vb" />
+    <Compile Include="ActiveRecord\Tests\UpdateTests.vb" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ActiveRecord\Settings.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Settings.ttinclude</DependentUpon>
+    </Content>
+    <Content Include="ActiveRecord\SQLServer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>SQLServer.ttinclude</DependentUpon>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

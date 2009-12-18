@@ -203,12 +203,14 @@ NameSpace <#=Namespace #>
 
         Public Shared Function Find(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean))) As IList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Dim repo = GetRepo()
-            Return repo.Find(expression).ToList()
+			Dim q As IQueryable(Of <#=EscapeIdentifier(tbl.ClassName)#>) = repo.Find(expression)
+            Return q.ToList()
         End Function
         
         Public Shared Function Find(expression As Expression(Of Func(Of <#=EscapeIdentifier(tbl.ClassName)#>, Boolean)), connectionString As String, providerName As String) As IList(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Dim repo = GetRepo(connectionString,providerName)
-            Return repo.Find(expression).ToList()
+			Dim q As IQueryable(Of <#=EscapeIdentifier(tbl.ClassName)#>) = repo.Find(expression)
+            Return q.ToList()
         End Function
         Public Shared Function All(connectionString As String, providerName As String) As IQueryable(Of <#=EscapeIdentifier(tbl.ClassName)#>)
             Return GetRepo(connectionString,providerName).GetAll()
